@@ -37,6 +37,53 @@ Note:
 
 
 
+/*
+2. Finding Updated Records
+
+Task:
+- Retrieve the most recent (highest) salary record for each employee.
+- If multiple salary records exist for the same employee (id), keep only the top one.
+
+Table:
+- ms_employee_salary (id, first_name, last_name, department_id, salary, ...)
+
+Approach:
+1. Use a window function ROW_NUMBER() OVER (PARTITION BY id ORDER BY salary DESC, department_id DESC).
+   - PARTITION BY id ensures numbering restarts for each employee.
+   - ORDER BY salary DESC ranks highest salaries first; department_id DESC breaks ties.
+2. Wrap this in a subquery that generates all rows with a new column "rn".
+3. Filter the outer query with WHERE rn = 1 to keep only the top salary record per employee.
+4. Alias the subquery as "s" (required in SQL). This allows us to treat the subquery as a table.
+*/
+
+SELECT id,
+       first_name,
+       last_name,
+       department_id,
+       salary
+FROM (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY id
+               ORDER BY salary DESC, department_id DESC
+           ) AS rn
+    FROM ms_employee_salary
+) s
+WHERE rn = 1
+ORDER BY id ASC;
+
+/*
+Notes:
+- The alias "s" is just a short name for the subquery result set.
+  Without an alias, SQL will raise an error: "subquery in FROM must have an alias".
+- "SELECT *," includes all original columns, and the comma allows us to add
+  the new calculated column (rn).
+- ROW_NUMBER() is a window function: it assigns a sequential rank within each partition
+  without collapsing rows, unlike GROUP BY.
+*/
+
+
+
 -- 1. Write a query that returns the number of unique users per client per month
 SELECT client_id, EXTRACT(MONTH FROM time_id) AS month, COUNT(DISTINCT user_id) AS users_num
     FROM fact_events
