@@ -82,6 +82,43 @@ Notes:
   without collapsing rows, unlike GROUP BY.
 */
 
+/*
+3. Workers With The Highest Salary
+
+Task:
+- Find the worker(s) with the maximum salary and display their job titles.
+
+Tables:
+- worker (worker_id, first_name, last_name, salary, ...)
+- title (worker_ref_id, worker_title, ...)
+
+Approach:
+1. Use a subquery to get the maximum salary from the worker table.
+2. Join worker with title on worker_id = worker_ref_id to attach job titles.
+3. Filter to only those workers whose salary equals the maximum.
+4. Return the job title(s) of the highest-paid employees.
+
+Notes:
+- INNER JOIN ensures only workers with a matching title appear.
+- If a highest-paid worker has no title row, use LEFT JOIN to include them.
+- If there are multiple workers with the same max salary, all their titles will be returned.
+*/
+
+-- Main solution: highest-paid worker(s) with their titles
+SELECT t.worker_title
+FROM worker w
+JOIN title t
+  ON t.worker_ref_id = w.worker_id
+WHERE w.salary = (SELECT MAX(salary) FROM worker);
+
+-- Optional variant: include top-paid workers even if they lack a title (title may be NULL)
+-- SELECT w.worker_id,
+--        w.salary,
+--        t.worker_title
+-- FROM worker w
+-- LEFT JOIN title t
+--   ON t.worker_ref_id = w.worker_id
+-- WHERE w.salary = (SELECT MAX(salary) FROM worker);
 
 
 -- 1. Write a query that returns the number of unique users per client per month
