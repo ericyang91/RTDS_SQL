@@ -121,6 +121,38 @@ WHERE w.salary = (SELECT MAX(salary) FROM worker);
 -- WHERE w.salary = (SELECT MAX(salary) FROM worker);
 
 
+/*
+4. Bikes Last Used
+
+Task:
+- For each bike in the DC bikeshare dataset, find the most recent trip (based on end_time).
+
+Table:
+- dc_bikeshare_q1_2012 (bike_number, start_time, end_time, ...)
+
+Approach:
+1. Use ROW_NUMBER() OVER (PARTITION BY bike_number ORDER BY end_time DESC).
+   - PARTITION BY bike_number ensures numbering restarts per bike.
+   - ORDER BY end_time DESC ranks the most recent trip first.
+2. In a subquery, assign row numbers for each bike’s rides.
+3. In the outer query, filter WHERE rn = 1 to keep only the most recent trip per bike.
+4. Order the result set by end_time DESC to list the latest trips first.
+*/
+
+SELECT bike_number,
+       end_time
+FROM (
+    SELECT *,
+           ROW_NUMBER() OVER (
+               PARTITION BY bike_number
+               ORDER BY end_time DESC
+           ) AS rn
+    FROM dc_bikeshare_q1_2012
+) AS s
+WHERE rn = 1
+ORDER BY end_time DESC;
+
+
 -- 1. Write a query that returns the number of unique users per client per month
 SELECT client_id, EXTRACT(MONTH FROM time_id) AS month, COUNT(DISTINCT user_id) AS users_num
     FROM fact_events
