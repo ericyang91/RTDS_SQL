@@ -153,6 +153,68 @@ WHERE rn = 1
 ORDER BY end_time DESC;
 
 
+/*
+5. Average Salaries
+
+Task:
+- For each employee, display their department, first name, salary, 
+  and the average salary of their department.
+
+Table:
+- employee (department, first_name, salary, ...)
+
+Approach:
+1. Use AVG(salary) as a window function with OVER (PARTITION BY department).
+   - PARTITION BY department computes the average salary for each department.
+   - Unlike GROUP BY, window functions do not collapse rows.
+   - Each employee row is preserved, with the department average shown alongside.
+
+Correct Query:
+*/
+
+SELECT department,
+       first_name,
+       salary,
+       AVG(salary) OVER (PARTITION BY department) AS average_salary
+FROM employee;
+
+/*
+Example Output:
+| department | first_name | salary | average_salary |
+|------------|------------|--------|----------------|
+| HR         | Alice      | 50000  | 55000          |
+| HR         | Bob        | 60000  | 55000          |
+| IT         | Carol      | 80000  | 90000          |
+| IT         | Dave       |100000  | 90000          |
+
+-----------------------------------------------------
+
+Why the earlier subquery version fails:
+
+Attempt (incorrect):
+SELECT department,
+       first_name,
+       salary,
+       (SELECT AVG(salary) OVER (PARTITION BY department) 
+        FROM employee)
+FROM employee;
+
+Problem:
+- A subquery used in the SELECT list is a *scalar subquery*.
+- Scalar subqueries must return exactly ONE value (one row, one column).
+- But a window function (AVG OVER ...) produces MANY values (one per row).
+- This mismatch causes PostgreSQL to throw an error:
+  "more than one row returned by a subquery used as an expression."
+
+Correct Fix:
+- Use the window function directly in the SELECT list, 
+  not inside a scalar subquery.
+- Or, if filtering is needed, wrap the whole query in a subquery/CTE 
+  and then filter on the window function result.
+*/
+
+
+
 -- 1. Write a query that returns the number of unique users per client per month
 SELECT client_id, EXTRACT(MONTH FROM time_id) AS month, COUNT(DISTINCT user_id) AS users_num
     FROM fact_events
