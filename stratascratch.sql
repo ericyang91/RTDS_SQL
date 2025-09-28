@@ -16,6 +16,13 @@ Approach:
 2. Find MAX(salary) for Marketing.
 3. Find MAX(salary) for Engineering.
 4. Subtract the two values and wrap in ABS() to ensure a positive result.
+
+Important Notes on Quoting in PostgreSQL:
+- 'single quotes' → string literals (values). Example: 'Marketing'
+- "double quotes" → identifiers (column names, table names). Example: "department"
+  Using "Marketing" without single quotes will throw:
+  ERROR: column "Marketing" does not exist
+- Always use single quotes for text comparisons in WHERE clauses.
 */
 
 SELECT ABS(
@@ -107,18 +114,18 @@ Notes:
 -- Main solution: highest-paid worker(s) with their titles
 SELECT t.worker_title
 FROM worker w
-JOIN title t
-  ON t.worker_ref_id = w.worker_id
-WHERE w.salary = (SELECT MAX(salary) FROM worker);
+INNER JOIN title t ON w.worker_id = t.worker_ref_id
+WHERE w.salary = (SELECT MAX(a.salary) FROM worker a JOIN title b ON a.worker_id = b.worker_ref_id)
 
--- Optional variant: include top-paid workers even if they lack a title (title may be NULL)
--- SELECT w.worker_id,
---        w.salary,
---        t.worker_title
+-- Below may not work
+-- SELECT t.worker_title
 -- FROM worker w
--- LEFT JOIN title t
---   ON t.worker_ref_id = w.worker_id
+-- INNER JOIN title t ON w.worker_id = t.worker_ref_id
 -- WHERE w.salary = (SELECT MAX(salary) FROM worker);
+-- This is because the subquery computes the max salary across ALL workers,
+-- but the INNER JOIN only keeps workers that HAVE a matching row in title.
+-- If the top earner does NOT have a title row, the join drops that row,
+-- so the query returns no results (empty set).
 
 
 /*
