@@ -220,6 +220,35 @@ Correct Fix:
   and then filter on the window function result.
 */
 
+/*
+6. Customer Details
+
+Task:
+- Retrieve each customer's details (first name, last name, city)
+  along with their order details.
+- Include all customers, even if they have not made any orders.
+- Sort results by customer first name (ascending) and order details (ascending).
+
+Tables:
+- customers (id, first_name, last_name, city, ...)
+- orders (order_id, cust_id, order_details, ...)
+
+Approach:
+1. Use a LEFT JOIN from customers to orders.
+   - Ensures all customers are included, even those without orders (NULL order_details).
+2. Select the required fields: first_name, last_name, city, order_details.
+3. Apply ORDER BY on first_name and order_details, both ascending.
+*/
+
+SELECT c.first_name,
+       c.last_name,
+       c.city,
+       o.order_details
+FROM customers c
+LEFT JOIN orders o
+       ON c.id = o.cust_id
+ORDER BY c.first_name ASC,
+         o.order_details ASC;
 
 
 -- 1. Write a query that returns the number of unique users per client per month
