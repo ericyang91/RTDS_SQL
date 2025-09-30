@@ -251,6 +251,43 @@ ORDER BY c.first_name ASC,
          o.order_details ASC;
 
 
+/*
+7. Number of Bathrooms and Bedrooms
+----------------------------------------------------------------------
+Table: airbnb_search_details (city, property_type, bathrooms, bedrooms, ...)
+
+Task:
+- Find the average number of bathrooms and bedrooms 
+  for each (city, property_type) combination.
+- Output city, property_type, avg_bathrooms, avg_bedrooms.
+*/
+
+-- Correct GROUP BY approach
+SELECT city,
+       property_type,
+       AVG(bathrooms) AS avg_bathrooms,
+       AVG(bedrooms)  AS avg_bedrooms
+FROM airbnb_search_details
+GROUP BY city, property_type
+ORDER BY city, property_type;
+
+-- Alternative (window function, needs DISTINCT to avoid duplicates)
+SELECT DISTINCT
+       city,
+       property_type,
+       AVG(bathrooms) OVER (PARTITION BY city, property_type) AS avg_bathrooms,
+       AVG(bedrooms)  OVER (PARTITION BY city, property_type) AS avg_bedrooms
+FROM airbnb_search_details
+ORDER BY city, property_type;
+
+
+
+
+
+
+
+
+
 -- 1. Write a query that returns the number of unique users per client per month
 SELECT client_id, EXTRACT(MONTH FROM time_id) AS month, COUNT(DISTINCT user_id) AS users_num
     FROM fact_events
