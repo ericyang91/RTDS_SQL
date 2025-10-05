@@ -282,6 +282,248 @@ ORDER BY city, property_type;
 
 
 
+/*
+8. Workers by Department Since April
+
+Task:
+- Find the number of workers in each department who joined on or after April 1, 2014.
+- Output the department name along with the corresponding number of workers.
+- Sort results by the number of workers in descending order.
+
+Table:
+- worker (worker_id, first_name, last_name, department, joining_date, ...)
+
+Approach:
+1. Filter rows using WHERE joining_date >= '2014-04-01'.
+2. Group the remaining workers by department.
+3. Use COUNT(*) to count workers per department.
+4. Order the results by worker_count in descending order.
+*/
+
+SELECT department,
+       COUNT(*) AS worker_count
+FROM worker
+WHERE joining_date >= '2014-04-01'
+GROUP BY department
+ORDER BY worker_count DESC;
+
+
+
+/*
+9. Unique Users Per Client Per Month
+
+Task:
+- Return the number of unique users per client for each month.
+- Assume all events occur within the same year, so the output month
+  should be numeric (1 = January, ..., 12 = December).
+
+Table:
+- fact_events (client_id, user_id, time_id, ...)
+
+Approach:
+1. Use COUNT(DISTINCT user_id) to get unique users.
+2. Use EXTRACT(MONTH FROM time_id) to extract the month (as a number 1–12) from the timestamp column.
+3. Group by client_id and the extracted month.
+4. Order by client_id and month if desired.
+*/
+
+SELECT client_id,
+       COUNT(DISTINCT user_id) AS user_num,
+       EXTRACT(MONTH FROM time_id) AS month
+FROM fact_events
+GROUP BY client_id, EXTRACT(MONTH FROM time_id)
+ORDER BY client_id, month;
+
+/*
+
+----------------------------------------------------------------------
+Explanation of Key Parts
+----------------------------------------------------------------------
+
+1. EXTRACT
+   - Syntax: EXTRACT(field FROM source)
+   - Returns a single part of a date/time value, such as:
+       EXTRACT(MONTH FROM '2024-06-15') = 6
+       EXTRACT(DAY   FROM '2024-06-15') = 15
+       EXTRACT(YEAR  FROM '2024-06-15') = 2024
+   - In this query, EXTRACT(MONTH FROM time_id) pulls out the month number
+     (1 through 12) from the event timestamp.
+
+2. Why we can't use the alias "month" in GROUP BY
+   - Aliases are created at the SELECT step
+   - SQL execution order is important:
+       FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY
+   - GROUP BY is evaluated *before* SELECT assigns column aliases.
+   - That means "month" doesn’t exist yet when GROUP BY is being processed.
+   - We must repeat the full expression:
+       GROUP BY EXTRACT(MONTH FROM time_id)
+   - By contrast, ORDER BY is evaluated *after* SELECT, so you *can* use aliases there:
+       ORDER BY month;
+
+3. COUNT(DISTINCT user_id)
+   - Ensures we count unique users only once per (client, month) group.
+
+*/
+
+
+
+/*
+10. Top Ranked Songs
+
+Task:
+- Find songs that have ranked at the #1 position in the daily Spotify worldwide rankings.
+- Output the track name and the number of times it ranked at the top.
+- Sort results by the number of times the song reached the top position (descending).
+
+Table:
+- spotify_worldwide_daily_song_ranking
+  (id, trackname, artist, position, date, streams, ...)
+
+Approach:
+1. Filter rows with position = 1 (top ranked songs).
+2. Group by trackname to count how many times each track was #1.
+3. Use COUNT(id) to count the occurrences for each track.
+4. Sort the results by the count in descending order.
+*/
+
+SELECT trackname,
+       COUNT(id) AS top_position_count
+FROM spotify_worldwide_daily_song_ranking
+WHERE position = 1
+GROUP BY trackname
+ORDER BY top_position_count DESC;
+
+
+
+/*
+11. Artist Appearance Count
+
+Task:
+- Find how many times each artist appeared on the Spotify worldwide daily song ranking list.
+- Output the artist name and the corresponding number of occurrences.
+- Order results by the number of occurrences in descending order.
+
+Table:
+- spotify_worldwide_daily_song_ranking
+  (id, trackname, artist, position, date, streams, ...)
+
+Approach:
+1. Count the number of rows per artist using COUNT(id).
+   - Each row represents one ranking appearance of a song.
+2. Group by artist to get counts per artist.
+3. Sort the result by appearance_count in descending order.
+*/
+
+SELECT artist,
+       COUNT(id) AS appearance_count
+FROM spotify_worldwide_daily_song_ranking
+GROUP BY artist
+ORDER BY appearance_count DESC;
+
+
+/*
+12. Lyft Drivers Wages
+
+Task:
+- Find all Lyft drivers whose yearly salary is either:
+  • Less than or equal to 30,000 USD, OR
+  • Greater than or equal to 70,000 USD.
+- Output all details related to these drivers.
+
+Table:
+- lyft_drivers (driver_id, name, yearly_salary, city, rating, ...)
+
+Approach:
+1. Use a WHERE clause with two conditions connected by OR.
+2. Retrieve all columns using SELECT *.
+3. Filter drivers who meet either salary boundary condition.
+
+Notes:
+SELECT * returns all columns; use explicit column names in production for better clarity.
+The OR condition ensures both salary ranges are captured.
+*/
+
+SELECT *
+FROM lyft_drivers
+WHERE yearly_salary <= 30000
+   OR yearly_salary >= 70000;
+
+
+/*
+13. Popularity of Hack
+
+Scenario:
+- Meta/Facebook ran a survey measuring the popularity of their new programming language, Hack.
+- The survey includes data such as programming familiarity, years of experience, age, gender, and satisfaction (popularity) with Hack.
+- Location data was not collected in the survey table, but employee IDs are available.
+- The facebook_employees table contains employee IDs and their office locations.
+
+Task:
+- Find the average popularity score of Hack per office location.
+- Output the location along with the corresponding average popularity.
+
+Tables:
+- facebook_hack_survey (employee_id, popularity, ...)
+- facebook_employees (id, name, location, ...)
+
+Approach:
+1. Use INNER JOIN to match survey responses with employee location via employee_id = id.
+2. Calculate the average popularity per location using AVG().
+3. Group results by location to get one record per office.
+4. Output the location and the average popularity score.
+
+Notes:
+The INNER JOIN ensures only employees who completed the survey are included.
+If you want all locations (including those with no survey responses), you can change INNER JOIN → LEFT JOIN.
+Always alias the aggregate column (e.g., AS avg_popularity) for clarity and readability.
+*/
+
+SELECT e.location,
+       AVG(s.popularity) AS avg_popularity
+FROM facebook_hack_survey s
+INNER JOIN facebook_employees e
+        ON s.employee_id = e.id
+GROUP BY e.location
+ORDER BY avg_popularity DESC;  -- optional: show most enthusiastic offices first
+
+
+
+/*
+14. Order Details Made by Jill and Eva
+
+Task:
+- Retrieve order details made by customers named Jill or Eva.
+- Output the customer's first name, order date, order details, and total order cost.
+- Sort records by customer ID in ascending order.
+
+Tables:
+- customers (id, first_name, last_name, city, ...)
+- orders (order_id, cust_id, order_date, order_details, total_order_cost, ...)
+
+Approach:
+1. Use an INNER JOIN to link customers to their orders (customers.id = orders.cust_id).
+2. Filter records where the customer's first name is 'Jill' or 'Eva'.
+3. Select relevant columns from both tables.
+4. Sort the results by customer ID (ascending).
+
+Notes:
+Replaced the OR condition with IN ('Jill', 'Eva') — it’s cleaner and equivalent.
+ORDER BY c.id ASC ensures results are sorted by customer ID.
+If you wanted to see all customers (even those without orders), you could change the join to a LEFT JOIN.
+*/
+
+SELECT c.first_name,
+       o.order_date,
+       o.order_details,
+       o.total_order_cost
+FROM customers c
+INNER JOIN orders o
+        ON c.id = o.cust_id
+WHERE c.first_name IN ('Jill', 'Eva')
+ORDER BY c.id ASC;
+
+
+
 
 
 
