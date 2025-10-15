@@ -489,7 +489,7 @@ ORDER BY avg_popularity DESC;  -- optional: show most enthusiastic offices first
 
 
 /*
-14. Order Details Made by Jill and Eva
+14. Order Details
 
 Task:
 - Retrieve order details made by customers named Jill or Eva.
@@ -522,8 +522,63 @@ INNER JOIN orders o
 WHERE c.first_name IN ('Jill', 'Eva')
 ORDER BY c.id ASC;
 
+/*
+15. Number of Shipments Per Month
+
+Task:
+- Calculate the number of shipments per month.
+- A *unique shipment* is the (shipment_id, sub_id) pair.
+- Output: year_month in 'YYYY-MM' format and the shipment count.
+
+Table:
+- amazon_shipment (shipment_id, sub_id, shipment_date, ...)
+
+Notes on TO_CHAR:
+- TO_CHAR(date_or_timestamp, 'YYYY-MM') converts a DATE/TIMESTAMP to a
+  text string formatted as Year-Month (e.g., 2025-10).
+- Use it when you need a *formatted* textual bucket like 'YYYY-MM' for reports.
+- If your date were stored as TEXT, you'd first parse it (e.g., TO_DATE(...))
+  and then format with TO_CHAR.
+
+Why COUNT(DISTINCT (shipment_id, sub_id))?
+- In PostgreSQL you can count distinct *row pairs* directly using a composite.
+  This avoids any ambiguity that could happen with string concatenation.
+*/
+
+SELECT
+  TO_CHAR(shipment_date, 'YYYY-MM') AS year_month,
+  COUNT(DISTINCT (shipment_id, sub_id)) AS shipment_count
+FROM amazon_shipment
+GROUP BY TO_CHAR(shipment_date, 'YYYY-MM')
+ORDER BY year_month;
 
 
+/*
+16. Event Count by MacBook Pro Users
+
+Task:
+- Count how many user events were performed by users on MacBook Pro devices.
+- Output the event name and the number of occurrences.
+- Sort the results by event count in descending order.
+
+Table:
+- playbook_events (event_id, event_name, user_id, device, event_timestamp, ...)
+
+Approach:
+1. Filter rows where device = 'macbook pro'.
+   - Note: String comparison in PostgreSQL is case-sensitive.
+     If device values vary in case, use LOWER(device) = 'macbook pro'.
+2. Group by event_name to count how many times each event occurred.
+3. Use COUNT(event_name) to count total occurrences per event.
+4. Order results by event_count (descending) so the most frequent events appear first.
+*/
+
+SELECT event_name,
+       COUNT(event_name) AS event_count
+FROM playbook_events
+WHERE LOWER(device) = 'macbook pro'
+GROUP BY event_name
+ORDER BY event_count DESC;
 
 
 
